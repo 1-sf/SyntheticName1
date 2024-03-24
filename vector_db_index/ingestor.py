@@ -1,72 +1,52 @@
+from dotenv import load_dotenv
+
+# Load environment variables from the .env file
+load_dotenv()
+
 import os
 import requests
 import json
 import time
 
-from tqdm import tqdm
-
 import together
 import pymongo
-# from newsapi import NewsApiClient
+from mistralai.client import MistralClient
+from pymongo.server_api import ServerApi
+
 
 TOGETHER_API_KEY = os.environ['TOGETHER_API_KEY']
 MONGODB_URI = os.environ['MONGODB_URI']
-# NEWS_API_KEY = os.environ['NEWS_API_KEY']
+mistral_client = MistralClient(api_key=os.environ['MISTRAL_API_KEY'])
 
 EMBEDDING_MODEL = 'togethercomputer/m2-bert-80M-32k-retrieval'
-EMBEDDING_FIELD = 'article_embedding'
+EMBEDDING_FIELD = 'sentence_embedding'
 
 together.api_key = TOGETHER_API_KEY
-client = pymongo.MongoClient(MONGODB_URI)
-# newsapi = NewsApiClient(api_key=NEWS_API_KEY)
+client = pymongo.MongoClient(MONGODB_URI, server_api=ServerApi('1'))
 
-def generate_embedding_together(text):
-  url = "https://api.together.xyz/api/v1/embeddings"
-  headers = {
-	"accept": "application/json",
-	"content-type": "application/json",
-	"Authorization": f"Bearer {TOGETHER_API_KEY}"
-  }
-  session = requests.Session()
-  response = session.post(
-	  url,
-	  headers=headers,
-	  json={"input": text,
-			"model": EMBEDDING_MODEL
-	  }
-  )
-  if response.status_code != 200:
-  	raise ValueError(f"Request failed with status code {response.status_code}: {response.text}")
-  return response.json()['data'][0]['embedding']
-
-
-def construct_mongo_document(article):
-	constructed_content = article["title"] + " " + article["description"] + " " + article["content"]
-	doc = {
-		"title": article["title"],
-		"url": article["url"],
-		"content": constructed_content,
-		"source": article["source"]["name"],
-		"date": article["publishedAt"],
-		EMBEDDING_FIELD: generate_embedding_together(constructed_content)
-	}
-	return doc
+def generate_batch_embeddings_mistral(sentences):
+    embeddings_batch_response = mistral_client.embeddings(
+        model="mistral-embed",
+        input=sentences,
+    )
+    return list(map(lambda embed_data: { EMBEDDING_FIELD: embed_data.embedding }, embeddings_batch_response.data)) 
 
 def read_and_ingest_sentences(collection):
-    
-
-def fetch_and_ingest_news(collection, topic):
-	print(f'Fetch and Ingesting News...')
-	all_articles = newsapi.get_everything(q=topic,
-										  from_param='2023-10-04',
-										  language='en',
-										  sort_by='relevancy',
-										  page=2)
-	for article in all_articles["articles"]:
-		time.sleep(2)
-		doc = construct_mongo_document(article)
-		print(f'Inserting Docs Into Mongo...')
-		collection.update_one({"url": doc["url"]}, {"$set": doc}, upsert= True)
+    sentences = []
+    with open("data/unlabeled/politics_tasklevel.txt", "r") as file:
+        while True:
+            line = file.readline()  # Read a single line
+            if not line:  # Break out of the loop when the end of the file is reached
+                break
+            line = line.strip()
+            sentences.append(line)
+    batch_size = 200
+    batches = [sentences[i:i+batch_size] for i in range(0, len(sentences), batch_size)]
+    print(batches)
+    for batch in batches:
+        embeddings_batch = generate_batch_embeddings_mistral(batch)
+        print(embeddings_batch)
+        collection.insert_many(embeddings_batch)
 
 if __name__ == "__main__":
 	db = client.get_database('politics')
