@@ -14,7 +14,7 @@ from pymongo.server_api import ServerApi
 
 MONGODB_URI = os.environ['MONGODB_URI']
 mistral_client = MistralClient(api_key=os.environ['MISTRAL_API_KEY'])
-client = pymongo.MongoClient(MONGODB_URI, server_api=ServerApi('1'))
+# client = pymongo.MongoClient(MONGODB_URI, server_api=ServerApi('1'))
 
 EMBEDDING_FIELD = 'sentence_embedding'
 
@@ -42,13 +42,13 @@ def retrieve_similar_sentences(db_collection, query, num_candidates=150, limit=1
 
   results = list(results)
   result_ids = list(map(lambda item: item['_id'], results))
-  results = collection.find({"_id": {"$in": result_ids}}, {'sentence': 1})
+  results = db_collection.find({"_id": {"$in": result_ids}}, {'sentence': 1})
   results = list(map(lambda item: item['sentence'], results))
   return results
 
 
-if __name__ == "__main__":
-  db = client.get_database('politics')
-  collection = db["Sentences"]
+# if __name__ == "__main__":
+#   db = client.get_database('politics')
+#   collection = db["Sentences"]
   ## Example
   # retrieve_similar_sentences(collection, 'Lincoln ran for President in 1860 , sweeping the North in victory .')
