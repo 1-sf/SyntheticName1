@@ -27,14 +27,14 @@ def parse_entities_promptner(output):
     return entities
 
 def get_token_labels(text, entities, label2index):
-    text = text.lower().replace("( ", "(").replace(" )", ")")
-
     labels = ["O"] * len(text.split())
+
+    text = text.lower()
     for entity_info in entities:
         if not entity_info[1]:
             continue
         
-        entity = entity_info[0].lower()
+        entity = entity_info[0].lower().replace("(", "( ").replace(")", " )")
         tag = entity_info[3]
         if tag == "organization":
             tag = "organisation"
@@ -58,4 +58,5 @@ def get_token_labels(text, entities, label2index):
                 labels[i] = "B-" + tag
             else:
                 labels[i] = "I-" + tag
-    return [int(label2index[label]) for label in labels]
+
+    return [int(label2index.get(label, "0")) for label in labels]
