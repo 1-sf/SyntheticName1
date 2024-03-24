@@ -1,0 +1,15 @@
+# The ID of the dataset you created above.
+dataset: draft-1-1000
+
+text_completion:
+  # How the fields of the JSON dataset should be formatted into the input text.
+  input_template: "### INSTRUCTION: {instruction} ### PARAGRAPH: {context}  ### TAG_SPANS: "
+  
+  # How the fields of the JSON dataset should be formatted into the output text.
+  output_template: "{response}"
+
+# The Hugging Face model name of the base model.
+base_model: mistralai/Mistral-7B-v0.1
+wandb_entity: vaiku
+wandb_api_key: f02e4f89ae22b04b0e4ddd44c5df6f886e2f891d
+wandb_project: Fine-tuning
