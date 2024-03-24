@@ -44,6 +44,8 @@ def get_token_labels(text, entities, label2index):
             tag = tag.split("/")[0]
         if "or" in tag:
             tag = tag.split("or")[0]
+        if ", " in tag:
+            tag = tag.split(", ")[0]
 
         start = text.find(entity)
         end = start + len(entity)
