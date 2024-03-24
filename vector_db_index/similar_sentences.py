@@ -78,7 +78,7 @@ def get_similar_sentences(collection, sentences, file_path):
 def get_similar_sentences_french_kw(collection):
 	df = pd.read_csv('data/scored/politics_tasklevel_french_kw.filt.csv')
 	get_similar_sentences(
-		collection, df['tokens'].to_list(), 'data/french_knn.csv')
+		collection, df['tokens'].to_list(), 'data/unlabeled/french_knn.csv')
 
 def get_similar_sentences_dataset(collection):
 	# File path to write the CSV file
